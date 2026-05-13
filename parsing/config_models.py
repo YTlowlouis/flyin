@@ -22,6 +22,7 @@ class Coord(BaseModel):
 class Zone(BaseModel):
     name: str
     coords: Coord
+    line: int
 
     #Optional tags
     type: str = Field(Optional=True, default="normal")
