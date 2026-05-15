@@ -54,36 +54,30 @@ class Options(BaseModel):
     zones: List[Zone]
     connections: List[Connection]
 
-    @field_validator('zones', mode="after")
-    def zone_validator(zones: List[Zone]) -> List[Zone]:
-        if len(zones) < 2:
-            raise ValueError("Too few zones")
-        names = {}
-        for zone in zones:
-            try:
-                names[zone.name] += 1
-            except Exception:
-                names[zone.name] = 1
-        for _, number in names.items():
-            if number != 1:
-                raise ValueError("Similar names")
+    @model_validator(mode="after")
+    def zone_validator(self) -> List[Zone]:
+        names = set()
+        for zone in self.zones:
+            if zone.name in names:
+                raise ValueError(f"Duplicate zone name : {zone.name}")
+            names.add(zone.name)
+        return self
 
-    @field_validator('connections', mode="after")
-    def connections_validator(connections: List[Connection]) -> List[Connection]:
-        connections = {}
-        for connection in connections:
-                try:
-                    connections[(connection.from_str, connection.to_str)] += 1
-                except Exception:
-                    connections[(connection.from_str, connection.to_str)] = 1
-                try:
-                    connections[(connection.to_str, connection.from_str)] += 1
-                except Exception:
-                    connections[(connection.to_str, connection.from_str)] = 1
-        for _, number in connections.items():
-            if number != 1:
-                raise ValueError("Similar connections")
-        return connections
+    @model_validator(mode="after")
+    def connections_validator(self) -> List[Connection]:
+        seen = set()
+        zones = [zone.name for zone in self.zones]
+        for conn in self.connections:
+            pair = tuple(sorted((conn.from_str, conn.to_str)))
+            if pair in seen:
+                raise ValueError(f"Duplicate zone name : {pair}")
+            fromm, to = pair
+            if fromm not in zones or to not in zones:
+                raise ValueError(f"Hub in connectin does not exist")
+            seen.add(pair)
+        return self
+
+
 # -----------------------------------------------------------------------------------
 # config file lines verif
 class Connection_line(BaseModel):
