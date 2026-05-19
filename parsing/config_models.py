@@ -28,6 +28,8 @@ class Zone(BaseModel):
     type: str = Field(Optional=True, default="normal")
     color: str = Field(Optional=True, default="None")
     max_drones: int = Field(Optional=True, default=1, ge=0)
+    start: bool = Field(Optional=True, default=False)
+    end: bool = Field(Optional=True, default=False)
 
     @field_validator('name', mode="after")
     def is_name_valid(name: str) -> str:
@@ -49,6 +51,7 @@ class Zone(BaseModel):
                 raise ValueError("Invalid color")
         return color
 
+
 class Options(BaseModel):
     nb_drones: int = Field(gt=0)
     zones: List[Zone]
@@ -57,10 +60,27 @@ class Options(BaseModel):
     @model_validator(mode="after")
     def zone_validator(self) -> List[Zone]:
         names = set()
+        start_count = 0
+        end_count = 0
+
         for zone in self.zones:
+            if zone.start and zone.end:
+                raise ValueError(f"Zone '{zone.name}' cannot be both start and end hub")
+            if zone.start:
+                start_count += 1
+                if start_count > 1:
+                    raise ValueError("Too many start Hub")
+            if zone.end:
+                end_count += 1
+                if end_count > 1:
+                    raise ValueError("Too many end Hub")
             if zone.name in names:
                 raise ValueError(f"Duplicate zone name : {zone.name}")
             names.add(zone.name)
+        if start_count == 0:
+            raise ValueError("Missing start_hub")
+        if end_count == 0:
+            raise ValueError("Missing end_hub")
         return self
 
     @model_validator(mode="after")

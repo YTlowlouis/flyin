@@ -1,7 +1,7 @@
 import re
 from typing import List, Optional
 from pydantic import ValidationError
-from .parser import Zone, ConfigError, Connection, Options, Coord
+from .config_models import Zone, ConfigError, Connection, Options, Coord
 
 class DroneCountParser:
     """Analyse la ligne initiale déclarant le nombre de drones."""
@@ -27,6 +27,10 @@ class HubParser:
         if not match:
             raise ValueError("Format de hub invalide")
 
+        start_end_dict = {
+            "start_hub": False,
+            "end_hub": False
+        }
         data = match.groupdict()
         h_type = data['h_type']
 
@@ -37,6 +41,7 @@ class HubParser:
                 extra_tags[t.group("key")] = t.group("value")
 
         if h_type in ["start_hub", "end_hub"]:
+            start_end_dict[h_type] = True
             forbidden = [k for k in ["max_drones", "zone"] if k in extra_tags]
             if forbidden:
                 raise ValueError(f"Le {h_type} ne supporte pas les options : {', '.join(forbidden)}")
@@ -47,7 +52,9 @@ class HubParser:
             line=ln,
             type=extra_tags.get("zone", "normal"),
             color=extra_tags.get("color", "None"),
-            max_drones=int(extra_tags.get("max_drones", 1))
+            max_drones=int(extra_tags.get("max_drones", 1)),
+            start=start_end_dict["start_hub"],
+            end=start_end_dict["end_hub"]
         )
 
 class ConnectionParser:

@@ -1,13 +1,13 @@
-from parsing.config_models import Options, Coord, Zone, Connection
-from parsing.parser import ConfigLoader
-from pydantic import ValidationError
+from parsing.parser2 import MapLoader
+from parsing.config_models import ConfigError
 
 def main():
+    loader = MapLoader()
     try:
-        parser = ConfigLoader()
-        parser.load_config("maps/easy/01_linear_path.txt")
-    except Exception as e:
-        print(e)
+        result = loader.load("maps/easy/01_linear_path.txt")
+        print(*result, end="\n")
+    except ConfigError as e:
+        print(f"ConfigError: {e}")
 
 if __name__ == "__main__":
     main()
